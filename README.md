@@ -5,6 +5,7 @@
 Zero-SecurityAgent 是一个基于 AI 的自动化渗透测试框架，支持 **Ollama / OpenAI / Claude** 三种 AI 模型。它可以自动完成信息收集、漏洞扫描、攻击模拟、报告生成等渗透测试全流程工作。
 
 ---
+<img width="1920" height="919" alt="image" src="https://github.com/user-attachments/assets/17883685-a20e-41b4-a892-34a3eb5a539d" />
 
 ## 快速开始
 
