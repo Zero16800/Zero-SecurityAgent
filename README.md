@@ -1,4 +1,4 @@
-# Zero-SecurityAgent - AI 自动化渗透测试框架
+# Zero-SecurityAgent - AI 自动化渗透测试框架(研发中...)
 
 ## 项目简介
 
@@ -46,13 +46,13 @@ python -m security_agent.main --config
 
 ```bash
 # 使用 Ollama
-python -m security_agent.main -t http://172.16.32.10 --ai ollama --model llama3
+python -m security_agent.main -t http://localhost --ai ollama --model llama3
 
 # 使用 OpenAI
-python -m security_agent.main -t http://172.16.32.10 --ai openai --model gpt-4 --api-key sk-xxx
+python -m security_agent.main -t http://localhost --ai openai --model gpt-4 --api-key sk-xxx
 
 # 使用 Claude
-python -m security_agent.main -t http://172.16.32.10 --ai claude --model claude-3-opus-20240229 --api-key sk-ant-xxx
+python -m security_agent.main -t http://localhost --ai claude --model claude-3-opus-20240229 --api-key sk-ant-xxx
 ```
 
 ### 3. 查询本地模型列表
@@ -96,7 +96,7 @@ python -m security_agent.main --list-models
 ### 场景 1：全自动渗透测试（推荐）
 
 ```bash
-python -m security_agent.main -t http://172.16.32.10
+python -m security_agent.main -t http://localhost
 ```
 
 自动执行：
@@ -109,13 +109,13 @@ python -m security_agent.main -t http://172.16.32.10
 ### 场景 2：快速扫描（仅 Top 20 端口）
 
 ```bash
-python -m security_agent.main -t http://172.16.32.10 --quick
+python -m security_agent.main -t http://localhost --quick
 ```
 
 ### 场景 3：Web 专项扫描（禁用其他模块）
 
 ```bash
-python -m security_agent.main -t http://172.16.32.10 --no-portscan --no-brute --no-traffic
+python -m security_agent.main -t http://localhost --no-portscan --no-brute --no-traffic
 ```
 
 ### 场景 4：流量分析
@@ -134,13 +134,13 @@ python -m security_agent.main -t 192.168.1.1 --full
 
 ```bash
 # 本地 Ollama
-python -m security_agent.main -t http://172.16.32.10 --ai ollama --model qwen2:7b
+python -m security_agent.main -t http://localhost --ai ollama --model qwen2:7b
 
 # OpenAI
-python -m security_agent.main -t http://172.16.32.10 --ai openai --model gpt-4-turbo --api-key sk-xxx
+python -m security_agent.main -t http://localhost --ai openai --model gpt-4-turbo --api-key sk-xxx
 
 # Claude
-python -m security_agent.main -t http://172.16.32.10 --ai claude --model claude-3-sonnet-20240229 --api-key sk-ant-xxx
+python -m security_agent.main -t http://localhost --ai claude --model claude-3-sonnet-20240229 --api-key sk-ant-xxx
 ```
 
 ---
@@ -319,13 +319,13 @@ E:\ZeroClaw\dayZero\
 
 ## 测试结果（Pikachu 靶场）
 
-以 Pikachu 靶场（`http://172.16.32.10`）测试结果：
+以 Pikachu 靶场（`http://localhost`）测试结果：
 
 ```
-[+] Target: http://172.16.32.10
+[+] Target: http://localhost
 [+] Start Time: 2026-05-24 21:07:52
 
-[*] Starting port scan: 172.16.32.10
+[*] Starting port scan: localhost
   [+] Port 25/tcp  SMTP
   [+] Port 80/tcp  HTTP
   [+] Port 110/tcp  POP3
