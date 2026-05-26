@@ -1,381 +1,700 @@
-# Zero-SecurityAgent - AI 自动化渗透测试框架(研发中...)
+# SecurityAgent — AI 自动化渗透测试框架
 
-## 项目简介
-
-Zero-SecurityAgent 是一个基于 AI 的自动化渗透测试框架，支持 **Ollama / OpenAI / Claude** 三种 AI 模型。它可以自动完成信息收集、漏洞扫描、攻击模拟、报告生成等渗透测试全流程工作。
+> 版本 1.0.0 | 支持 Ollama / OpenAI / Claude / 自定义 API
 
 ---
-<img width="1920" height="919" alt="image" src="https://github.com/user-attachments/assets/17883685-a20e-41b4-a892-34a3eb5a539d" />
 
-## 快速开始
+## 目录
 
-### 1. 环境准备
+1. [项目概述](#1-项目概述)
+2. [快速开始](#2-快速开始)
+3. [项目结构](#3-项目结构)
+4. [CLI 命令行工具](#4-cli-命令行工具)
+5. [Web UI 使用指南](#5-web-ui-使用指南)
+6. [Agent 角色系统](#6-agent-角色系统)
+7. [技能库 (Skill Library)](#7-技能库-skill-library)
+8. [模块详解](#8-模块详解)
+9. [AI 模型配置](#9-ai-模型配置)
+10. [报告系统](#10-报告系统)
+11. [API 接口参考](#11-api-接口参考)
+12. [配置文件参考](#12-配置文件参考)
+13. [自定义扩展](#13-自定义扩展)
+14. [常见问题](#14-常见问题)
+
+---
+
+## 1. 项目概述
+
+SecurityAgent 是一个基于 **AI 驱动的自动化渗透测试框架**，支持多种 AI 后端（Ollama / OpenAI / Claude / 自定义 API）。它可以自动完成：
+
+- **信息收集**：端口扫描 + Banner 抓取 + 服务识别
+- **Web 漏洞扫描**：SQL 注入、XSS、LFI、RCE、SSRF
+- **暴力破解**：SSH / FTP / HTTP 表单
+- **漏洞利用**：SQLi 利用、RCE 执行、LFI 文件读取、文件上传、反弹 Shell
+- **流量分析**：PCAP 包异常检测
+- **AI 智能分析**：漏洞识别、攻击路径规划、修复建议
+- **报告生成**：JSON / Markdown / HTML 三种格式
+- **内置 754 项安全技能库**：覆盖 26 个安全领域
+- **Pikachu 靶场专用模块**：自动发现并利用 12+ 漏洞页面
+
+### 技术栈
+
+| 组件          | 技术                                               |
+| ------------- | -------------------------------------------------- |
+| 后端语言      | Python 3.9+                                        |
+| Web 框架      | Flask                                              |
+| AI 协议       | OpenAI 兼容 API (支持 Ollama/OpenAI/Claude/自定义) |
+| 端口扫描      | Socket + 多线程                                    |
+| Web 扫描      | Requests + 正则 Payload 检测                       |
+| SSH 爆破      | Paramiko（可选）                                   |
+| 流量分析      | Scapy（可选）                                      |
+| 前端          | Bootstrap 5 + Bootstrap Icons                      |
+| Markdown 渲染 | marked.js                                          |
+
+---
+
+## 2. 快速开始
+
+### 2.1 环境准备
 
 ```bash
-# 安装依赖
+cd E:\ZeroClaw\dayZero
 pip install -r requirements.txt
 ```
 
-依赖列表：
-| 包名 | 用途 |
-|------|------|
-| requests | HTTP 请求（Web 扫描、API 调用） |
-| urllib3 | HTTP 底层库（已禁用 SSL 验证） |
-| paramiko | SSH 暴力破解模块 |
-| scapy | PCAP 流量分析模块 |
+依赖清单：
 
-> `paramiko` 和 `scapy` 是可选的——对应的模块会在缺失时自动跳过并提示。
+| 包名     | 用途                | 必需   |
+| -------- | ------------------- | ------ |
+| requests | HTTP 请求           | ✅      |
+| urllib3  | HTTP 底层库         | ✅      |
+| pyyaml   | YAML 解析（技能库） | ✅      |
+| paramiko | SSH 暴力破解        | ❌ 可选 |
+| scapy    | PCAP 流量分析       | ❌ 可选 |
 
-### 2. 配置 AI 模型
+### 2.2 启动方式
 
-首次使用前建议运行配置向导：
-
-```bash
-python -m security_agent.main --config
-```
-
-向导会依次询问：
-1. **AI 提供商**：`ollama` / `openai` / `claude`
-2. **API Key**（openai/claude 需要）
-3. **模型名称**（如 `llama3`、`gpt-4`、`claude-3-opus-20240229`）
-4. **Ollama 地址**（默认 `http://localhost:11434`）
-5. **扫描线程数**（默认 50）
-6. **超时时间**（默认 3 秒）
-7. **报告输出目录**（默认 `./reports`）
-
-或者直接通过命令行指定：
+**方式一：Web UI（推荐）**
 
 ```bash
-# 使用 Ollama
-python -m security_agent.main -t http://localhost --ai ollama --model llama3
-
-# 使用 OpenAI
-python -m security_agent.main -t http://localhost --ai openai --model gpt-4 --api-key sk-xxx
-
-# 使用 Claude
-python -m security_agent.main -t http://localhost --ai claude --model claude-3-opus-20240229 --api-key sk-ant-xxx
+run.bat start
+# 访问 http://localhost:5000
 ```
 
-### 3. 查询本地模型列表
+**方式二：Web UI（前台）**
 
 ```bash
-python -m security_agent.main --list-models
+python -m security_agent.web_ui --port 5000
 ```
 
-会查询 Ollama 的 `/api/tags` 和 `/v1/models` 两个端点，自动适配标准 Ollama 和 OpenAI 兼容模式。
+**方式三：CLI 命令行**
+
+```bash
+python -m security_agent.main -t http://172.16.32.10
+```
+
+**方式四：VBS 后台启动**
+
+```bash
+wscript.exe start_server.vbs
+```
+
+### 2.3 运行管理
+
+| 命令             | 说明                                |
+| ---------------- | ----------------------------------- |
+| `run.bat start`  | 启动 Web UI（后台，自动打开浏览器） |
+| `run.bat stop`   | 停止 Web UI                         |
+| `run.bat status` | 检查运行状态                        |
 
 ---
 
-## 命令行参数完整说明
-
-| 参数 | 简写 | 说明 | 默认值 |
-|------|------|------|--------|
-| `--target` | `-t` | 目标 URL 或 IP 地址 | 必填 |
-| `--quick` | `-q` | 快速模式（只扫 Top20 端口） | 关闭 |
-| `--full` | | 完整模式（扫描全端口 1-65535） | 关闭 |
-| `--pcap` | | 分析 PCAP 包捕获文件 | - |
-| `--ai` | | AI 提供商: ollama/openai/claude | ollama |
-| `--model` | | AI 模型名称 | 见配置 |
-| `--api-key` | | API 密钥（openai/claude） | 空 |
-| `--no-portscan` | | 禁用端口扫描 | 启用 |
-| `--no-webscan` | | 禁用 Web 漏洞扫描 | 启用 |
-| `--no-brute` | | 禁用暴力破解 | 启用 |
-| `--no-traffic` | | 禁用流量分析 | 启用 |
-| `--no-ai` | | 禁用 AI 智能分析 | 启用 |
-| `--output` | | 报告输出目录 | ./reports |
-| `--config` | | 运行配置向导 | - |
-| `--list-models` | | 列出可用 AI 模型 | - |
-| `--threads` | | 扫描线程数 | 50 |
-| `--timeout` | | 超时时间（秒） | 5 |
-| `--safe` | | 安全模式（仅扫描不攻击） | 关闭 |
-| `--verbose` | `-v` | 详细输出模式 | 关闭 |
-
----
-
-## 使用场景
-
-### 场景 1：全自动渗透测试（推荐）
-
-```bash
-python -m security_agent.main -t http://localhost
-```
-
-自动执行：
-1. ✅ 端口扫描（Top 1000 端口）
-2. ✅ Web 漏洞扫描
-3. ✅ 暴力破解（SSH/FTP/HTTP 表单）
-4. ✅ AI 智能分析
-5. ✅ 报告生成（JSON + Markdown + HTML）
-
-### 场景 2：快速扫描（仅 Top 20 端口）
-
-```bash
-python -m security_agent.main -t http://localhost --quick
-```
-
-### 场景 3：Web 专项扫描（禁用其他模块）
-
-```bash
-python -m security_agent.main -t http://localhost --no-portscan --no-brute --no-traffic
-```
-
-### 场景 4：流量分析
-
-```bash
-python -m security_agent.main --pcap capture.pcap
-```
-
-### 场景 5：内网横向移动（IP 目标）
-
-```bash
-python -m security_agent.main -t 192.168.1.1 --full
-```
-
-### 场景 6：使用指定 AI 模型
-
-```bash
-# 本地 Ollama
-python -m security_agent.main -t http://localhost --ai ollama --model qwen2:7b
-
-# OpenAI
-python -m security_agent.main -t http://localhost --ai openai --model gpt-4-turbo --api-key sk-xxx
-
-# Claude
-python -m security_agent.main -t http://localhost --ai claude --model claude-3-sonnet-20240229 --api-key sk-ant-xxx
-```
-
----
-
-## 模块功能详解
-
-### 1. 端口扫描模块 (`modules/port_scanner.py`)
-
-- **功能**：TCP 端口扫描 + Banner 抓取 + 服务识别
-- **端口列表**：
-  - `quick`: Top 20 端口
-  - `top-1000`: 1000 个常用端口（默认）
-  - `full`: 全端口 1-65535
-- **服务识别**：内置 30+ 常见服务（HTTP/SSH/MySQL/RDP 等）
-- **Banner 抓取**：自动识别服务版本信息
-
-### 2. Web 漏洞扫描模块 (`modules/web_scanner.py`)
-
-- **功能**：自动化 Web 漏洞检测
-- **检测类型**：
-  | 漏洞类型 | 检测方法 | 严重等级 |
-  |----------|----------|----------|
-  | SQL 注入 | 错误信息检测 + Payload 测试 | Critical |
-  | XSS（反射型/存储型） | Payload 回显检测 | High |
-  | LFI 本地文件包含 | 系统文件读取检测 | Critical |
-  | RCE 命令执行 | 命令执行结果检测 | Critical |
-  | SSRF | 内网地址访问检测 | High |
-- **Pikachu 靶场专用**：自动发现并测试 Pikachu 的 12+ 漏洞页面
-- **技术栈识别**：自动检测 Server/X-Powered-By/PHP/MySQL/jQuery
-
-### 3. 暴力破解模块 (`modules/brute_forcer.py`)
-
-- **SSH 暴力破解**：需要 `paramiko` 库
-- **FTP 暴力破解**：纯 Socket 实现
-- **HTTP 表单暴力破解**：POST 表单登录爆破
-- **内置字典**：
-  - 用户名：`admin` / `root` / `test` / `pikachu` 等
-  - 密码：`admin` / `123456` / `password` / `pikachu` 等
-
-### 4. 流量分析模块 (`modules/traffic_analyzer.py`)
-
-- **功能**：网络流量异常检测
-- **需要**：`scapy` 库（PCAP 文件分析）
-- **检测能力**：
-  - 异常流量模式（高频连接）
-  - 端口扫描行为
-  - DoS 攻击模式
-  - 暴力破解目标识别
-
-### 5. AI 智能分析模块 (`ai_provider.py`)
-
-- **功能**：AI 驱动的漏洞分析和报告生成
-- **支持的 AI 后端**：
-  | 后端 | 协议 | 配置项 |
-  |------|------|--------|
-  | Ollama | 原生 API / OpenAI 兼容 | `base_url`, `model` |
-  | OpenAI | OpenAI API | `api_key`, `model` |
-  | Claude | Anthropic API | `api_key`, `model` |
-- **分析能力**：
-  - 漏洞自动识别与分类
-  - 严重等级评估（Critical/High/Medium/Low）
-  - 攻击路径链分析
-  - 修复建议生成
-  - 完整安全报告生成
-
-### 6. 报告生成模块 (`report.py`)
-
-自动生成三种格式报告：
-
-| 格式 | 文件名示例 | 特点 |
-|------|-----------|------|
-| JSON | `security_report_20260524_210856.json` | 结构化数据，适合二次处理 |
-| Markdown | `security_report_20260524_210856.md` | 可读性强，可直接查看 |
-| HTML | `security_report_20260524_210856.html` | 可视化报表，带样式和统计图 |
-
-HTML 报告包含：
-- 执行摘要（漏洞统计、端口统计）
-- 漏洞详情表格（按严重等级着色）
-- 端口扫描结果
-- 修复优先级建议列表
-
----
-
-## AI 模型配置详解
-
-### Ollama 配置
-
-支持两种 API 模式：
-
-1. **原生模式**（默认）：调用 `/api/generate`
-   ```
-   base_url: http://localhost:11434
-   ```
-
-2. **OpenAI 兼容模式**：调用 `/v1/chat/completions`
-   ```
-   base_url: http://localhost:11434
-   model: llama3
-   ```
-   如果原生 API 失败，会自动降级到 OpenAI 兼容模式。
-
-配置示例：
-```json
-{
-  "ai": {
-    "provider": "ollama",
-    "ollama": {
-      "model": "llama3",
-      "base_url": "http://localhost:11434",
-      "temperature": 0.3
-    }
-  }
-}
-```
-
-### OpenAI 配置
-
-```json
-{
-  "ai": {
-    "provider": "openai",
-    "openai": {
-      "api_key": "sk-xxxxxxxx",
-      "model": "gpt-4",
-      "base_url": "https://api.openai.com/v1",
-      "temperature": 0.3,
-      "max_tokens": 4096
-    }
-  }
-}
-```
-
-### Claude 配置
-
-```json
-{
-  "ai": {
-    "provider": "claude",
-    "claude": {
-      "api_key": "sk-ant-xxxxxxxx",
-      "model": "claude-3-opus-20240229",
-      "base_url": "https://api.anthropic.com/v1",
-      "max_tokens": 4096
-    }
-  }
-}
-```
-
----
-
-## 项目结构
+## 3. 项目结构
 
 ```
 E:\ZeroClaw\dayZero\
-├── security_agent/           # 主程序包
-│   ├── __init__.py           # 版本信息
-│   ├── main.py               # CLI 入口
-│   ├── config.py             # 配置管理
-│   ├── ai_provider.py        # AI 模型集成
-│   ├── report.py             # 报告生成
-│   ├── utils.py              # 工具函数
-│   └── modules/              # 功能模块
-│       ├── __init__.py
-│       ├── port_scanner.py   # 端口扫描
-│       ├── web_scanner.py    # Web 漏洞扫描
-│       ├── brute_forcer.py   # 暴力破解
-│       └── traffic_analyzer.py # 流量分析
-├── reports/                  # 报告输出目录
-├── docs/                     # 文档目录
-├── requirements.txt          # 依赖列表
-├── run.bat                   # 快速启动脚本
-└── README.md                 # 本文件
+├── security_agent/                # 主程序包
+│   ├── __init__.py                # 版本信息
+│   ├── main.py                    # CLI 入口（argparse）
+│   ├── web_ui.py                  # Web UI 入口
+│   ├── ai_provider.py             # AI 模型适配器
+│   ├── config.py                  # 配置管理（单例）
+│   ├── config.json                # 配置文件
+│   ├── report.py                  # 报告生成器
+│   ├── utils.py                   # 工具函数
+│   ├── modules/                   # 功能模块
+│   │   ├── port_scanner.py        # 端口扫描
+│   │   ├── web_scanner.py         # Web 漏洞扫描
+│   │   ├── brute_forcer.py        # 暴力破解
+│   │   ├── traffic_analyzer.py    # 流量分析
+│   │   ├── exploit.py             # 漏洞利用引擎
+│   │   ├── ai_pentest.py          # AI 驱动渗透引擎
+│   │   ├── skill_library.py       # 技能库加载器
+│   │   └── kali_integration.py    # Kali 工具集成
+│   └── web/                       # Flask Web UI
+│       ├── app.py                 # 路由与 API（910+ 行）
+│       ├── templates/             # Jinja2 模板
+│       │   ├── base.html          # 基础布局 + 侧边栏
+│       │   ├── dashboard.html     # 控制台首页
+│       │   ├── scan.html          # 自动渗透
+│       │   ├── ai_pentest.html    # AI 渗透测试（含 Agent + 技能库）
+│       │   ├── scanners.html      # 独立扫描器
+│       │   ├── exploit.html       # 漏洞利用
+│       │   ├── kali.html          # Kali 工具集
+│       │   ├── reports.html       # 报告中心
+│       │   └── config.html        # 系统配置
+│       └── static/
+│           ├── css/ai_pentest.css
+│           └── js/ai_pentest.js
+├── skills_library/                # 754 项安全技能库（git clone）
+│   └── skills/                    # 每个技能一个目录
+├── agents.json                    # 自定义 Agent 配置
+├── targets.json                   # 目标列表
+├── chat_history.json              # 聊天历史
+├── reports/                       # 报告输出目录
+├── uploads/                       # 文件上传目录
+├── docs/                          # 文档
+├── requirements.txt               # Python 依赖
+├── run.bat                        # 服务管理脚本
+└── start_server.vbs               # 后台启动脚本
 ```
 
 ---
 
-## 测试结果（Pikachu 靶场）
+## 4. CLI 命令行工具
 
-以 Pikachu 靶场（`http://localhost`）测试结果：
+### 4.1 基本用法
 
+```bash
+python -m security_agent.main -t <目标地址>
 ```
-[+] Target: http://localhost
-[+] Start Time: 2026-05-24 21:07:52
 
-[*] Starting port scan: localhost
-  [+] Port 25/tcp  SMTP
-  [+] Port 80/tcp  HTTP
-  [+] Port 110/tcp  POP3
-  [+] Port 135/tcp  MSRPC
-  [+] Port 143/tcp  IMAP
-  [+] Port 443/tcp  HTTPS
-  [+] Port 445/tcp  SMB
-  [+] Port 3306/tcp  MySQL [5.7.26-log]
-  ...
-  Port scan done: 10 open (42.8s)
+### 4.2 完整参数
 
-[*] Starting web vulnerability scan
-  Target reachable: HTTP 200
-  Found 0 forms, 71 links
-  Found Pikachu page: /vul/sqli/sqli_str.php
-  Found Pikachu page: /vul/sqli/sqli_id.php
-  Found Pikachu page: /vul/xss/xss_reflected_get.php
-  Found Pikachu page: /vul/rce/rce_eval.php
-  ...
-  [!] Pikachu SQL injection confirmed: /vul/sqli/sqli_str.php
-  [!] Pikachu SQL injection confirmed: /vul/sqli/sqli_id.php
+| 参数            | 简写 | 说明                    | 默认      |
+| --------------- | ---- | ----------------------- | --------- |
+| `--target`      | `-t` | 目标 URL 或 IP          | 必填      |
+| `--quick`       | `-q` | 快速模式（Top 20 端口） | 关闭      |
+| `--full`        |      | 全端口扫描（1-65535）   | 关闭      |
+| `--pcap`        |      | 分析 PCAP 捕获文件      | -         |
+| `--ai`          |      | AI 提供商               | ollama    |
+| `--model`       |      | 指定 AI 模型            | 见配置    |
+| `--api-key`     |      | API 密钥                | -         |
+| `--no-portscan` |      | 禁用端口扫描            | 启用      |
+| `--no-webscan`  |      | 禁用 Web 扫描           | 启用      |
+| `--no-brute`    |      | 禁用暴力破解            | 启用      |
+| `--no-traffic`  |      | 禁用流量分析            | 启用      |
+| `--no-ai`       |      | 禁用 AI 分析            | 启用      |
+| `--output`      |      | 报告输出目录            | ./reports |
+| `--config`      |      | 运行配置向导            | -         |
+| `--list-models` |      | 列出可用模型            | -         |
+| `--threads`     |      | 扫描线程数              | 50        |
+| `--timeout`     |      | 超时秒数                | 5         |
+| `--safe`        |      | 安全模式（仅扫描）      | 关闭      |
+| `--verbose`     | `-v` | 详细输出                | 关闭      |
 
-[v] Auto Pentest Complete!
-[v] Total Time: 64.6s
-[v] Vulnerabilities Found: 4
+### 4.3 使用示例
+
+```bash
+# 全自动渗透测试
+python -m security_agent.main -t http://172.16.32.10
+
+# 快速扫描（仅 Top 20 端口）
+python -m security_agent.main -t 192.168.1.1 --quick
+
+# 仅 Web 漏洞扫描
+python -m security_agent.main -t http://example.com --no-portscan --no-brute
+
+# 全端口扫描 + 指定 AI 模型
+python -m security_agent.main -t 10.0.0.5 --full --ai ollama --model llama3
+
+# 流量分析
+python -m security_agent.main --pcap capture.pcap
+
+# 查看可用模型
+python -m security_agent.main --list-models
+
+# 运行配置向导
+python -m security_agent.main --config
 ```
 
 ---
 
-## 适用场景
+## 5. Web UI 使用指南
 
-| 场景 | 说明 |
-|------|------|
-| 红队演练 | 模拟真实攻击，评估企业安全防御能力 |
-| CTF 比赛 | 自动化信息收集和漏洞发现，加速解题 |
-| Web 应用渗透测试 | 检测 SQL 注入、XSS、RCE 等常见 Web 漏洞 |
-| 内网横向移动 | 端口扫描 + 服务识别 + 弱口令爆破 |
-| 密码破解与暴力攻击 | SSH/FTP/HTTP 表单登录爆破 |
-| 流量分析与威胁检测 | PCAP 包分析 + 异常流量识别 + 攻击行为检测 |
-| APT 攻击模拟 | 多阶段攻击链模拟 + AI 路径规划 |
-| 漏洞赏金挑战 | 快速扫描 + AI 分析 + 报告生成 |
-| 企业安全评估 | 中小企业低成本安全检测方案 |
+访问 `http://localhost:5000`，左侧导航栏进入各功能页面。
+
+### 5.1 控制台 (`/`)
+
+概览面板，显示：
+
+- 扫描统计（总扫描次数、漏洞总数、报告数）
+- 最近扫描记录
+- AI 模型信息
+
+### 5.2 自动渗透 (`/scan`)
+
+标准的自动化渗透测试界面：
+
+1. 填写目标地址
+2. 选择扫描模式（标准/快速/全量）
+3. 选择启用模块（端口扫描/Web扫描/爆破/AI分析）
+4. 点击启动，实时查看日志输出
+5. 完成后自动生成报告
+
+### 5.3 AI 渗透测试 (`/ai_pentest`)
+
+AI 驱动的智能渗透测试（核心功能）：
+
+- 顶部：目标输入 + Agent 角色选择器
+- 左侧：AI 助手对话（支持 Markdown）
+- 右上：AI 实时推理面板
+- 右下：执行日志
+- 快捷技能按钮栏
+- 技能库面板
+
+### 5.4 独立扫描器 (`/scanners`)
+
+单独调用各扫描模块：
+
+- 端口扫描（指定主机 + 端口范围）
+- Web 漏洞扫描（输入 URL）
+- 暴力破解（选择服务类型）
+- 流量分析（上传 PCAP 文件）
+
+### 5.5 漏洞利用 (`/exploit`)
+
+漏洞利用工具集：
+
+- SQL 注入利用（GET/POST）
+- 命令执行（RCE）
+- 文件包含（LFI）
+- 反弹 Shell（bash/python/powershell/nc/php）
+- Pikachu 靶场一键利用（SQLi + RCE + LFI + 文件上传）
+
+### 5.6 Kali 工具集 (`/kali`)
+
+Kali Linux 工具集成（通过 WSL）：
+
+- 信息收集（nmap/masscan/dnsenum/whatweb/nikto 等）
+- Web 应用（sqlmap/dirb/gobuster/wpscan 等）
+- 密码攻击（hydra/john/hashcat 等）
+- 漏洞利用（metasploit/searchsploit 等）
+- 自动生成扫描工作流
+
+### 5.7 报告中心 (`/reports`)
+
+查看和下载已生成的报告（JSON / Markdown / HTML）。
+
+### 5.8 系统配置 (`/config_page`)
+
+配置 AI 模型、扫描参数、报告输出等。
 
 ---
 
-## 注意事项
+## 6. Agent 角色系统
 
-1. **合法使用**：本工具仅用于授权的安全测试和教育目的
-2. **Ollama 兼容性**：如果使用 Ollama 的 OpenAI 兼容模式，需确保 Ollama 版本支持 `/v1/chat/completions` 端点
-3. **扫描速度**：全端口扫描 1-65535 可能需要较长时间，建议先用 `--quick` 模式
-4. **防火墙绕过**：部分目标可能触发 IDS/IPS，请谨慎使用
-5. **依赖缺失**：`paramiko`（SSH 爆破）和 `scapy`（流量分析）为可选依赖
+### 6.1 内置 Agent
+
+| ID               | 名称         | 定位               | 系统提示词风格           |
+| ---------------- | ------------ | ------------------ | ------------------------ |
+| `pentest_expert` | 渗透测试专家 | 全能渗透测试       | 专业、全面、系统化       |
+| `red_team`       | 红队专家     | 激进攻击模拟       | 激进、实战、以突破为目标 |
+| `web_security`   | Web 安全专家 | Web 漏洞深度检测   | 细致、深入、代码级       |
+| `network_expert` | 网络专家     | 网络架构与内网渗透 | 系统化、架构视角         |
+| `code_auditor`   | 代码审计专家 | 源代码安全审计     | 严谨、代码级             |
+| `defender`       | 安全运维专家 | 防守与修复         | 保守、务实、可落地       |
+
+### 6.2 切换 Agent
+
+Web UI → AI 渗透测试页面 → 目标输入框下方的 **Agent 下拉选择器** → 选择角色。
+
+切换后 AI 的系统提示词随之改变，回答风格和专业方向也会不同。
+
+### 6.3 自定义 Agent
+
+编辑项目根目录 `agents.json`：
+
+```json
+[
+  {
+    "id": "my_agent",
+    "name": "自定义Agent",
+    "description": "描述",
+    "icon": "bi-robot",
+    "system_prompt": "你是一名... 用中文回答，侧重...",
+    "skills": ["port_scan", "web_scan", "exploit"]
+  }
+]
+```
+
+| 字段            | 类型     | 说明                        |
+| --------------- | -------- | --------------------------- |
+| `id`            | string   | 唯一标识，小写字母+下划线   |
+| `name`          | string   | 显示名称                    |
+| `description`   | string   | 简短描述                    |
+| `icon`          | string   | Bootstrap Icons 类名        |
+| `system_prompt` | string   | 系统提示词，定义 Agent 身份 |
+| `skills`        | string[] | 可用技能 ID 列表            |
+
+可用技能 ID：
+
+- `port_scan` - 端口扫描
+- `web_scan` - Web 漏洞扫描
+- `brute_force` - 弱口令爆破
+- `exploit` - 漏洞利用
+- `full_test` - 完整渗透
+
+编辑后刷新页面即可，无需重启服务。
+
+---
+
+## 7. 技能库 (Skill Library)
+
+集成了 **Anthropic Cybersecurity Skills**（754 项结构化网络安全技能，覆盖 26 个领域，映射 MITRE ATT&CK / NIST CSF 2.0 / MITRE ATLAS / D3FEND / NIST AI RMF 五个框架）。
+
+### 7.1 AI 自动引用
+
+在聊天中输入问题时，AI 会自动：
+
+1. 从 754 个技能中检索最匹配的 1-2 个
+2. 将技能的标准化 Workflow 注入到 AI 上下文
+3. 基于专业流程给出回答
+
+例如输入 `检测 172.16.32.10 的 SQL 注入漏洞` → AI 自动引用 `exploiting-sql-injection-vulnerabilities` 技能。
+
+### 7.2 手动浏览
+
+Web UI → AI 渗透测试页面 → 点击「技能库」按钮 → 右侧滑出面板：
+
+- 按子领域分类浏览（45 个领域）
+- 搜索框实时检索
+- 点开技能查看详情（描述/标签/框架映射/步骤）
+
+### 7.3 覆盖领域
+
+cloud-security, threat-hunting, threat-intelligence, network-security, web-application-security, malware-analysis, digital-forensics, soc-operations, identity-access-management, incident-response, container-security, api-security, ot-ics-security, vulnerability-management, red-teaming, penetration-testing 等 45 个领域。
+
+### 7.4 更新技能库
+
+```bash
+cd skills_library
+git pull
+```
+
+重启服务即可加载最新技能。
+
+---
+
+## 8. 模块详解
+
+### 8.1 端口扫描 (`modules/port_scanner.py`)
+
+- TCP connect 扫描
+- Banner 抓取（支持 HTTP/HTTPS/通用服务）
+- 服务识别（30+ 常见服务映射）
+- 多线程并发
+- 四种模式：quick（20 端口）/ top-100（100 端口）/ top-1000（1000 端口）/ full（65535 端口）
+
+### 8.2 Web 漏洞扫描 (`modules/web_scanner.py`)
+
+| 漏洞类型      | 检测方法                    | 严重等级 |
+| ------------- | --------------------------- | -------- |
+| SQL 注入      | 错误信息检测 + Payload 测试 | Critical |
+| XSS（反射型） | Payload 回显检测            | High     |
+| LFI 文件包含  | 系统文件读取检测            | Critical |
+| RCE 命令执行  | 命令执行结果检测            | Critical |
+| SSRF          | 内网地址访问检测            | High     |
+
+Pikachu 靶场专用：自动检测 12+ 预置漏洞页面。
+
+### 8.3 暴力破解 (`modules/brute_forcer.py`)
+
+- **SSH 爆破**：需要 paramiko，内置 8 个用户名 × 20 个密码
+- **FTP 爆破**：纯 Socket 实现
+- **HTTP 表单爆破**：POST 登录表单
+
+### 8.4 流量分析 (`modules/traffic_analyzer.py`)
+
+- 需要 scapy 库
+- 解析 PCAP 文件
+- 统计 TOP IP / 端口 / 协议
+- 异常检测：高频连接、端口扫描、DoS 模式
+
+### 8.5 漏洞利用 (`modules/exploit.py`)
+
+| 功能             | 说明                                   |
+| ---------------- | -------------------------------------- |
+| SQLi 利用        | 联合查询注入，提取数据库/用户/版本信息 |
+| RCE 利用         | 命令执行（管道/分号/反引号）           |
+| LFI 利用         | 目录穿越读取文件                       |
+| 文件上传         | Pikachu 靶场绕过上传                   |
+| 反弹 Shell       | bash / python / powershell / nc / php  |
+| Pikachu 一键利用 | SQLi + RCE + LFI + 文件上传全自动      |
+
+### 8.6 Kali 工具集成 (`modules/kali_integration.py`)
+
+- 通过 WSL 调用 Kali Linux 工具
+- 自动检测工具是否可用
+- 覆盖信息收集 / Web 应用 / 密码攻击 / 漏洞利用 / 无线网络 / 逆向工程 /  sniffing 等类别
+- 自动生成扫描工作流
+
+### 8.7 AI 驱动渗透引擎 (`modules/ai_pentest.py`)
+
+AI 驱动的全自动渗透测试：
+
+- AI 制定攻击计划（`step_plan`）
+- AI 解释端口扫描结果并给出建议（`step_port_scan`）
+- AI 分析 Web 漏洞并推荐利用顺序（`step_web_scan`）
+- AI 决策弱口令爆破（`step_brute_force`）
+- AI 漏洞利用方案（`step_exploit`）
+- AI 生成总结报告（`step_summary`）
+- 交互式聊天（`chat`）：AI 理解用户指令并执行对应操作
+
+---
+
+## 9. AI 模型配置
+
+### 9.1 支持的 AI 后端
+
+| 后端   | 协议                   | 配置文件位置 |
+| ------ | ---------------------- | ------------ |
+| Ollama | 原生 API / OpenAI 兼容 | `ai.ollama`  |
+| OpenAI | OpenAI API             | `ai.openai`  |
+| Claude | Anthropic API          | `ai.claude`  |
+| 自定义 | OpenAI 兼容            | `ai.custom`  |
+
+### 9.2 配置文件 (`config.json`)
+
+```json
+{
+  "ai": {
+    "provider": "custom",
+    "custom": {
+      "api_key": "sk-xxx",
+      "model": "mimo-v2.5-pro",
+      "base_url": "https://your-api.com/v1",
+      "temperature": 0.4
+    },
+    "ollama": {
+      "model": "llama3.1",
+      "base_url": "http://localhost:11434",
+      "temperature": 0.3
+    }
+  },
+  "scanning": {
+    "threads": 50,
+    "timeout": 5,
+    "ports": "top-1000"
+  },
+  "reporting": {
+    "format": "html",
+    "output_dir": "./reports"
+  },
+  "modules": {
+    "port_scan": true,
+    "web_scan": true,
+    "brute_force": true,
+    "traffic_analysis": true,
+    "ai_analysis": true
+  }
+}
+```
+
+### 9.3 在 Web UI 中配置
+
+系统配置页面：`http://localhost:5000/config_page`
+
+支持：
+
+- 选择 AI 提供商
+- 填写 API Key 和 Base URL
+- 测试 AI 连接
+- 查询可用模型列表
+- 修改扫描参数
+
+### 9.4 命令行配置
+
+```bash
+# 使用 Ollama
+python -m security_agent.main -t http://target --ai ollama --model llama3
+
+# 使用 OpenAI
+python -m security_agent.main -t http://target --ai openai --model gpt-4 --api-key sk-xxx
+
+# 使用 Claude
+python -m security_agent.main -t http://target --ai claude --model claude-3-opus-20240229 --api-key sk-ant-xxx
+```
+
+---
+
+## 10. 报告系统
+
+### 10.1 报告格式
+
+| 格式     | 文件名                                 | 特点                     |
+| -------- | -------------------------------------- | ------------------------ |
+| JSON     | `security_report_YYYYMMDD_HHMMSS.json` | 结构化数据，适合二次处理 |
+| Markdown | `security_report_YYYYMMDD_HHMMSS.md`   | 可读性强                 |
+| HTML     | `security_report_YYYYMMDD_HHMMSS.html` | 可视化报表，带样式和统计 |
+
+### 10.2 报告内容
+
+- 执行摘要（漏洞总数、风险等级）
+- 端口扫描结果（端口/服务/Banner 表格）
+- Web 扫描结果（技术栈/表单/链接）
+- 漏洞详情（按严重等级排序：Critical → High → Medium → Low）
+- 修复建议
+- AI 攻击路径分析
+- 优先处理建议
+
+### 10.3 输出目录
+
+默认 `./reports/`，可在配置中修改。
+
+---
+
+## 11. API 接口参考
+
+### 11.1 扫描相关
+
+| 方法 | 路径                            | 说明                  |
+| ---- | ------------------------------- | --------------------- |
+| POST | `/api/scan/start`               | 启动标准扫描          |
+| GET  | `/api/scan/<session_id>/logs`   | SSE 实时日志流        |
+| GET  | `/api/scan/<session_id>/status` | 扫描状态查询          |
+| POST | `/api/modules/port_scan`        | 独立端口扫描          |
+| POST | `/api/modules/web_scan`         | 独立 Web 扫描         |
+| POST | `/api/modules/brute_force`      | 独立暴力破解          |
+| POST | `/api/modules/traffic_analysis` | 流量分析（上传 PCAP） |
+
+### 11.2 AI 渗透测试
+
+| 方法 | 路径                                  | 说明                |
+| ---- | ------------------------------------- | ------------------- |
+| POST | `/api/ai_pentest/start`               | 启动 AI 渗透测试    |
+| POST | `/api/ai_pentest/chat`                | AI 对话             |
+| POST | `/api/ai_pentest/chat_stream`         | AI 对话（SSE 流式） |
+| GET  | `/api/ai_pentest/<session_id>/status` | 查询 AI 会话状态    |
+| POST | `/api/ai_pentest/<session_id>/stop`   | 停止 AI 会话        |
+| GET  | `/api/ai_pentest/history`             | 获取聊天历史        |
+
+### 11.3 Agent 与技能库
+
+| 方法 | 路径                                  | 说明                      |
+| ---- | ------------------------------------- | ------------------------- |
+| GET  | `/api/agents`                         | 获取所有 Agent + 技能列表 |
+| POST | `/api/agents/execute`                 | 执行指定技能              |
+| GET  | `/api/skill-library/stats`            | 技能库统计                |
+| GET  | `/api/skill-library/search?q=`        | 搜索技能                  |
+| GET  | `/api/skill-library/get/<id>`         | 获取技能详情              |
+| GET  | `/api/skill-library/subdomain/<name>` | 按领域获取技能            |
+
+### 11.4 漏洞利用
+
+| 方法 | 路径                         | 说明             |
+| ---- | ---------------------------- | ---------------- |
+| POST | `/api/exploit/sqli`          | SQL 注入利用     |
+| POST | `/api/exploit/rce`           | 命令执行         |
+| POST | `/api/exploit/lfi`           | 文件包含         |
+| POST | `/api/exploit/reverse_shell` | 反弹 Shell       |
+| POST | `/api/exploit/pikachu`       | Pikachu 一键利用 |
+
+### 11.5 目标与报告
+
+| 方法            | 路径                      | 说明          |
+| --------------- | ------------------------- | ------------- |
+| GET/POST/DELETE | `/api/targets`            | 目标管理      |
+| GET             | `/api/reports`            | 报告列表      |
+| GET             | `/api/reports/<filename>` | 下载报告      |
+| GET             | `/api/config`             | 获取/修改配置 |
+| POST            | `/api/config/test_ai`     | 测试 AI 连接  |
+
+### 11.6 Kali 工具
+
+| 方法 | 路径                 | 说明           |
+| ---- | -------------------- | -------------- |
+| GET  | `/api/kali/check`    | 检查 Kali 工具 |
+| POST | `/api/kali/command`  | 生成工具命令   |
+| GET  | `/api/kali/search`   | 搜索工具       |
+| POST | `/api/kali/workflow` | 生成扫描工作流 |
+
+---
+
+## 12. 配置文件参考
+
+### 12.1 `config.json`
+
+AI 模型、扫描参数、报告设置。详见 [9.2 节](#92-配置文件-configjson)。
+
+### 12.2 `targets.json`
+
+预设目标列表：
+
+```json
+[
+  {"name": "Demo", "url": "http://172.16.32.10", "mode": "standard"}
+]
+```
+
+### 12.3 `agents.json`
+
+自定义 Agent 角色。详见 [6.3 节](#63-自定义-agent)。
+
+### 12.4 `chat_history.json`
+
+AI 对话历史记录，自动保存最近 100 条消息。
+
+---
+
+## 13. 自定义扩展
+
+### 13.1 添加自定义 Agent
+
+编辑 `agents.json` → 添加 Agent 配置 → 刷新页面。
+
+### 13.2 添加自定义技能
+
+编辑 `agents.json` 中的 `skills` 列表 → 在 `ai_pentest.py` 的 `execute_skill` 方法中添加新 action 的处理逻辑。
+
+### 13.3 添加新的扫描模块
+
+1. 在 `modules/` 下创建新模块文件
+2. 在 `main.py` 的 `SecurityAgent` 类中添加调用
+3. 在 `web/app.py` 中添加 API 路由
+4. 在 Web UI 模板中添加对应页面
+
+### 13.4 更新外部技能库
+
+```bash
+cd skills_library
+git pull
+```
+
+---
+
+## 14. 常见问题
+
+**Q: 启动时提示端口被占用？**
+A: 先 `run.bat stop` 或 `taskkill /f /im python.exe` 再启动。
+
+**Q: AI 模型无法连接？**
+A: 检查 `config.json` 中的 `base_url`、`api_key`、`model` 是否正确。在 Web UI 配置页面点击「测试连接」。
+
+**Q: 技能库加载失败？**
+A: 确保 `skills_library/skills/` 目录存在且有 SKILL.md 文件。如果缺失，重新 clone：
+
+```bash
+rmdir /s skills_library
+git clone https://github.com/mukul975/Anthropic-Cybersecurity-Skills.git skills_library
+```
+
+**Q: 扫描结果不准确？**
+A: 扫描结果受网络环境、目标防护措施等因素影响。建议：
+
+- 确保网络连通性
+- 适当增加超时时间（`--timeout 10`）
+- 使用全端口模式（`--full`）
+
+**Q: 如何更新到最新版本？**
+A: 该项目为本地项目，更新需要从源代码仓库拉取或手动覆盖文件。
