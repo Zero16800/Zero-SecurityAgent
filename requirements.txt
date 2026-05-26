@@ -1,5 +1,0 @@
-requests>=2.28.0
-urllib3>=1.26.0
-paramiko>=3.0.0
-scapy>=2.5.0
-pyyaml>=6.0
